@@ -31,6 +31,7 @@ class LANChat: # TODO: Enchance UI/UX
         
         # Interface dropdown list
         self.interface_var = tk.StringVar()
+        self.interface_var.set(interface_name)
         self.interface_list = ttk.Combobox(self.root, textvariable=self.interface_var)
         self.interface_list['values'] = self.get_interfaces()
         self.interface_list.grid(row=1, column=1, padx=10, pady=10)
@@ -87,7 +88,7 @@ class LANChat: # TODO: Enchance UI/UX
         
         ip_base = ".".join(self.local_ip.split('.')[:-1]) + '.'
         subnet = ip_base + '0/24'
-        
+        self.scan_button.config(state=tk.DISABLED)
         try:
             # TODO: This assumes class C network in LAN (needs to be modified to read subnet mask)
             # Execute the nmap command and capture the output
@@ -96,6 +97,7 @@ class LANChat: # TODO: Enchance UI/UX
                 capture_output=True,
                 text=True
             )
+            self.scan_button.config(state=tk.NORMAL)
             alive_hosts = result.stdout.strip().split('\n')
             for ip in alive_hosts:
                 if ip:
