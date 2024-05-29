@@ -120,24 +120,27 @@ class LANChat: # TODO: Enchance UI/UX
         server_socket.bind((self.local_ip, PORT))
         server_socket.listen(5)
         
+        inputs = [server_socket]
         while True:
-            client_socket, addr = server_socket.accept()
-            threading.Thread(target=self.handle_client, args=(client_socket,), daemon=True).start()
-
-    def handle_client(self, client_socket):
-        while True: # TODO: Optimize while True (perfomance).
-            try:
-                msg = client_socket.recv(1024).decode()
-                if msg.startswith("NOTIFY"):
-                    _, hostname = msg.split()
-                    self.update_msg_display(f"{hostname} is online\n")
-                elif len(msg) > 0:
-                    print(self.TAG + ": " + msg) # DEL
-                    self.update_msg_display(f"{msg}\n")
-            except:
-                print(self.TAG + "Socket Closed...")
-                client_socket.close()
-                break
+            readable, _, _ = select.select(inputs, [], [])
+            for s in readable:
+                if s is server_socket:
+                    client_socket, addr = server_socket.accept()
+                    inputs.append(client_socket)
+                else:
+                    try:
+                        msg = s.recv(1024).decode()
+                        if not msg:
+                            inputs.remove(s)
+                            s.close()
+                        elif msg.startswith("NOTIFY"):
+                            _, hostname = msg.split()
+                            self.update_msg_display(f"{hostname} is online\n")
+                        elif len(msg) > 0:
+                            self.update_msg_display(f"{msg}\n")
+                    except:
+                        inputs.remove(s)
+                        s.close()
 
     def send_message(self):
         msg = self.message_entry.get()
